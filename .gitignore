@@ -1,0 +1,11 @@
+target/
+logs/
+dist/
+**/*.log
+**/*.adbbackup
+.idea/
+.vscode/
+*.iml
+*.pdb
+.DS_Store
+Thumbs.db

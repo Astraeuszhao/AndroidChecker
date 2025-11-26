@@ -1,0 +1,4 @@
+943794a324bb08583379b273ec6c1ddd  ./Photos/photo1.jpg
+4219abcfb907a3431b6d2def73353e14  ./Documents/report.txt
+2fdfec38036cf4d6c65b326c6f0aea5e  ./Music/song.mp3
+46dddeb52658d71f6c7066a1738ac78b  ./test.txt

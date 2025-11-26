@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "device_serial": "emulator-5554",
+  "device_model": "sdk_gphone64_x86_64",
+  "android_version": "16",
+  "backup_time": "2025-10-11 19:38:19",
+  "items": [
+    "UserFiles",
+    "AppList",
+    "AppData"
+  ],
+  "has_root": false
+}
