@@ -1,23 +1,28 @@
-﻿use serde::{Deserialize, Serialize};`n#[derive(Debug, Clone, Serialize, Deserialize)]
+﻿use serde::{Deserialize, Serialize};
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum BackupItem {
     UserFiles,
     AppList,
     AppData,
     SystemSettings,
-}`nimpl BackupItem {
+}
+impl BackupItem {
     pub fn name(&self) -> &str {
         match self {
-            Self::UserFiles => "鐢ㄦ埛鏂囦欢 (/sdcard/)",
-            Self::AppList => "宸插畨瑁呭簲鐢ㄥ垪琛?,
-            Self::AppData => "搴旂敤鏁版嵁 (闇€Root鎴栨巿鏉?",
-            Self::SystemSettings => "绯荤粺璁剧疆鏁版嵁搴?(闇€Root)",
+            Self::UserFiles => "用户文件 (/sdcard/)",
+            Self::AppList => "已安装应用列表",
+            Self::AppData => "应用数据 (需Root或授权)",
+            Self::SystemSettings => "系统设置数据库 (需Root)",
         }
-    }`n    pub fn requires_root(&self) -> bool {
+    }
+    pub fn requires_root(&self) -> bool {
         matches!(self, Self::SystemSettings)
-    }`n    pub fn all_items() -> Vec<Self> {
+    }
+    pub fn all_items() -> Vec<Self> {
         vec![Self::UserFiles, Self::AppList, Self::AppData, Self::SystemSettings]
     }
-}`n#[derive(Debug, Serialize, Deserialize)]
+}
+#[derive(Debug, Serialize, Deserialize)]
 pub struct BackupMetadata {
     pub version: String,
     pub device_serial: String,
@@ -26,7 +31,8 @@ pub struct BackupMetadata {
     pub backup_time: String,
     pub items: Vec<BackupItem>,
     pub has_root: bool,
-}`n#[derive(Debug, Clone)]
+}
+#[derive(Debug, Clone)]
 pub enum RestoreMode {
     Full,
     Selective(Vec<BackupItem>),

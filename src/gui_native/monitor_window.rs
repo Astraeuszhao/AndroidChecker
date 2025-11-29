@@ -2,28 +2,35 @@
 use crate::adb::AdbClient;
 use crate::monitor::{ProcessMonitor, AppManager, ResourceMonitor};
 use std::sync::{Arc, Mutex};
-use tokio::runtime::Runtime;`n#[derive(PartialEq)]
+use tokio::runtime::Runtime;
+#[derive(PartialEq)]
 enum Tab {
     Processes,
     Performance,
-}`npub struct MonitorApp {
+}
+pub struct MonitorApp {
     serial: String,
-    current_tab: Tab,`n    process_monitor: ProcessMonitor,
+    current_tab: Tab,
+    process_monitor: ProcessMonitor,
     app_manager: AppManager,
     resource_monitor: ResourceMonitor,
-    runtime: Runtime,`n    processes: Arc<Mutex<Vec<ProcessInfo>>>,
+    runtime: Runtime,
+    processes: Arc<Mutex<Vec<ProcessInfo>>>,
     process_filter: String,
-    package_to_name: Arc<Mutex<std::collections::HashMap<String, String>>>,`n    cpu_usage: Arc<Mutex<f32>>,
+    package_to_name: Arc<Mutex<std::collections::HashMap<String, String>>>,
+    cpu_usage: Arc<Mutex<f32>>,
     memory_used: Arc<Mutex<u64>>,
     memory_total: Arc<Mutex<u64>>,
     disk_usage: Arc<Mutex<f32>>,
     network_rx: Arc<Mutex<u64>>,
-    network_tx: Arc<Mutex<u64>>,`n    last_refresh: f64,
+    network_tx: Arc<Mutex<u64>>,
+    last_refresh: f64,
     loading: bool,
     selected_process: Option<u32>,
     show_context_menu: bool,
     context_menu_pos: egui::Pos2,
-}`n#[derive(Clone)]
+}
+#[derive(Clone)]
 struct ProcessInfo {
     pid: u32,
     name: String,
@@ -32,17 +39,20 @@ struct ProcessInfo {
     memory: u64,
     disk: f32,
     network: f32,
-}`n#[derive(Clone, PartialEq)]
+}
+#[derive(Clone, PartialEq)]
 enum ProcessType {
     App,
     Background,
     System,
-}`nimpl MonitorApp {
+}
+impl MonitorApp {
     pub fn new(client: AdbClient, serial: String) -> Self {
         let process_monitor = ProcessMonitor::new(client.clone());
         let app_manager = AppManager::new(client.clone());
         let resource_monitor = ResourceMonitor::new(client);
-        let runtime = Runtime::new().expect("Failed to create Tokio runtime");`n        Self {
+        let runtime = Runtime::new().expect("Failed to create Tokio runtime");
+        Self {
             serial,
             current_tab: Tab::Processes,
             process_monitor,
@@ -64,19 +74,24 @@ enum ProcessType {
             show_context_menu: false,
             context_menu_pos: egui::Pos2::ZERO,
         }
-    }`n    fn render_header(&mut self, ui: &mut Ui) {
+    }
+    fn render_header(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             ui.heading(RichText::new("浠诲姟绠＄悊锟?).size(18.0).strong().color(Color32::from_rgb(80, 180, 255)));
             ui.separator();
-            ui.label(RichText::new(format!("璁惧: {}", self.serial)).color(Color32::from_rgb(180, 180, 180)));`n            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            ui.label(RichText::new(format!("璁惧: {}", self.serial)).color(Color32::from_rgb(180, 180, 180)));
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 if ui.add_sized([80.0, 28.0], egui::Button::new(RichText::new("鍒锋柊").size(14.0))).clicked() {
                     self.refresh_data();
                 }
             });
         });
-    }`n    fn render_tabs(&mut self, ui: &mut Ui) {
+    }
+    fn render_tabs(&mut self, ui: &mut Ui) {
         ui.vertical(|ui| {
-            ui.add_space(5.0);`n            let tab_height = 40.0;`n            if ui.add_sized(
+            ui.add_space(5.0);
+            let tab_height = 40.0;
+            if ui.add_sized(
                 [ui.available_width(), tab_height],
                 egui::SelectableLabel::new(
                     self.current_tab == Tab::Processes,
@@ -84,7 +99,8 @@ enum ProcessType {
                 )
             ).clicked() {
                 self.current_tab = Tab::Processes;
-            }`n            if ui.add_sized(
+            }
+            if ui.add_sized(
                 [ui.available_width(), tab_height],
                 egui::SelectableLabel::new(
                     self.current_tab == Tab::Performance,
@@ -94,17 +110,23 @@ enum ProcessType {
                 self.current_tab = Tab::Performance;
             }
         });
-    }`n    fn render_processes_tab(&mut self, ui: &mut Ui) {
+    }
+    fn render_processes_tab(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
             ui.label(RichText::new("鎼滅储:").size(14.0));
             ui.add(egui::TextEdit::singleline(&mut self.process_filter).desired_width(250.0));
-        });`n        ui.add_space(10.0);`n        let processes = self.processes.lock().unwrap().clone();
+        });
+        ui.add_space(10.0);
+        let processes = self.processes.lock().unwrap().clone();
         let total_count = processes.len();
         let filtered_count = processes.iter().filter(|p| {
-            self.process_filter.is_empty() || 
+            self.process_filter.is_empty() ||
             p.name.to_lowercase().contains(&self.process_filter.to_lowercase())
-        }).count();`n        ui.label(RichText::new(format!("杩涚▼: {}", filtered_count))
-            .size(12.0).color(Color32::from_rgb(150, 150, 150)));`n        ui.add_space(5.0);`n        ScrollArea::vertical().show(ui, |ui| {
+        }).count();
+        ui.label(RichText::new(format!("杩涚▼: {}", filtered_count))
+            .size(12.0).color(Color32::from_rgb(150, 150, 150)));
+        ui.add_space(5.0);
+        ScrollArea::vertical().show(ui, |ui| {
             egui::Grid::new("process_grid")
                 .striped(true)
                 .spacing([20.0, 8.0])
@@ -116,18 +138,22 @@ enum ProcessType {
                     ui.label(RichText::new("鍐呭瓨").strong().size(13.0));
                     ui.label(RichText::new("纾佺洏").strong().size(13.0));
                     ui.label(RichText::new("缃戠粶").strong().size(13.0));
-                    ui.end_row();`n                    let mut app_procs = Vec::new();
+                    ui.end_row();
+                    let mut app_procs = Vec::new();
                     let mut bg_procs = Vec::new();
-                    let mut sys_procs = Vec::new();`n                    for process in processes.iter() {
-                        if !self.process_filter.is_empty() 
+                    let mut sys_procs = Vec::new();
+                    for process in processes.iter() {
+                        if !self.process_filter.is_empty()
                             && !process.name.to_lowercase().contains(&self.process_filter.to_lowercase()) {
                             continue;
-                        }`n                        match process.process_type {
+                        }
+                        match process.process_type {
                             ProcessType::App => app_procs.push(process),
                             ProcessType::Background => bg_procs.push(process),
                             ProcessType::System => sys_procs.push(process),
                         }
-                    }`n                    if !app_procs.is_empty() {
+                    }
+                    if !app_procs.is_empty() {
                         ui.label(RichText::new("搴旂敤杩涚▼").strong().color(Color32::from_rgb(100, 200, 255)));
                         ui.label("");
                         ui.label("");
@@ -138,7 +164,8 @@ enum ProcessType {
                         for p in app_procs {
                             self.render_process_row(ui, p);
                         }
-                    }`n                    if !bg_procs.is_empty() {
+                    }
+                    if !bg_procs.is_empty() {
                         ui.label(RichText::new("鍚庡彴杩涚▼").strong().color(Color32::from_rgb(255, 200, 100)));
                         ui.label("");
                         ui.label("");
@@ -149,7 +176,8 @@ enum ProcessType {
                         for p in bg_procs {
                             self.render_process_row(ui, p);
                         }
-                    }`n                    if !sys_procs.is_empty() {
+                    }
+                    if !sys_procs.is_empty() {
                         ui.label(RichText::new("绯荤粺杩涚▼").strong().color(Color32::from_rgb(200, 200, 200)));
                         ui.label("");
                         ui.label("");
@@ -163,8 +191,10 @@ enum ProcessType {
                     }
                 });
         });
-    }`n    fn render_process_row(&mut self, ui: &mut Ui, process: &ProcessInfo) {
-        let response = ui.label(RichText::new(&process.name).size(12.0));`n        response.context_menu(|ui| {
+    }
+    fn render_process_row(&mut self, ui: &mut Ui, process: &ProcessInfo) {
+        let response = ui.label(RichText::new(&process.name).size(12.0));
+        response.context_menu(|ui| {
             if ui.button("缁撴潫杩涚▼").clicked() {
                 self.kill_process(process.pid);
                 ui.close_menu();
@@ -175,18 +205,22 @@ enum ProcessType {
             if ui.button("灞烇拷?).clicked() {
                 ui.close_menu();
             }
-        });`n        ui.label(RichText::new(process.pid.to_string()).size(12.0).color(Color32::from_rgb(180, 180, 180)));
+        });
+        ui.label(RichText::new(process.pid.to_string()).size(12.0).color(Color32::from_rgb(180, 180, 180)));
         ui.label(RichText::new(format!("{:.1}%", process.cpu)).size(12.0)
             .color(if process.cpu > 50.0 { Color32::from_rgb(255, 100, 100) } else { Color32::WHITE }));
         ui.label(RichText::new(format!("{:.1} MB", process.memory as f64 / 1024.0 / 1024.0)).size(12.0));
         ui.label(RichText::new(format!("{:.1} MB/s", process.disk)).size(12.0));
         ui.label(RichText::new(format!("{:.1} Mbps", process.network)).size(12.0));
         ui.end_row();
-    }`n    fn render_performance_tab(&mut self, ui: &mut Ui) {
+    }
+    fn render_performance_tab(&mut self, ui: &mut Ui) {
         ui.heading(RichText::new("鎬ц兘鐩戞帶").size(16.0).color(Color32::from_rgb(80, 180, 255)));
-        ui.add_space(15.0);`n        let cpu_usage = *self.cpu_usage.lock().unwrap();
+        ui.add_space(15.0);
+        let cpu_usage = *self.cpu_usage.lock().unwrap();
         let memory_used = *self.memory_used.lock().unwrap();
-        let memory_total = *self.memory_total.lock().unwrap();`n        ScrollArea::vertical().show(ui, |ui| {
+        let memory_total = *self.memory_total.lock().unwrap();
+        ScrollArea::vertical().show(ui, |ui| {
             ui.group(|ui| {
                 ui.set_min_width(ui.available_width());
                 ui.add_space(10.0);
@@ -199,7 +233,9 @@ enum ProcessType {
                     .desired_height(30.0);
                 ui.add(cpu_bar);
                 ui.add_space(10.0);
-            });`n            ui.add_space(20.0);`n            ui.group(|ui| {
+            });
+            ui.add_space(20.0);
+            ui.group(|ui| {
                 ui.set_min_width(ui.available_width());
                 ui.add_space(10.0);
                 ui.label(RichText::new("鍐呭瓨").size(16.0).strong());
@@ -222,7 +258,9 @@ enum ProcessType {
                     .desired_height(30.0);
                 ui.add(mem_bar);
                 ui.add_space(10.0);
-            });`n            ui.add_space(20.0);`n            ui.group(|ui| {
+            });
+            ui.add_space(20.0);
+            ui.group(|ui| {
                 ui.set_min_width(ui.available_width());
                 ui.add_space(10.0);
                 ui.label(RichText::new("纾佺洏").size(16.0).strong());
@@ -235,7 +273,9 @@ enum ProcessType {
                     .desired_height(30.0);
                 ui.add(disk_bar);
                 ui.add_space(10.0);
-            });`n            ui.add_space(20.0);`n            ui.group(|ui| {
+            });
+            ui.add_space(20.0);
+            ui.group(|ui| {
                 ui.set_min_width(ui.available_width());
                 ui.add_space(10.0);
                 ui.label(RichText::new("缃戠粶").size(16.0).strong());
@@ -254,14 +294,17 @@ enum ProcessType {
                 ui.add_space(10.0);
             });
         });
-    }`n    fn refresh_data(&mut self) {
+    }
+    fn refresh_data(&mut self) {
         self.load_package_names();
         self.load_processes();
         self.load_resources();
-    }`n    fn load_package_names(&mut self) {
+    }
+    fn load_package_names(&mut self) {
         let serial = self.serial.clone();
         let app_manager = self.app_manager.clone();
-        let pkg_map = Arc::clone(&self.package_to_name);`n        self.runtime.spawn(async move {
+        let pkg_map = Arc::clone(&self.package_to_name);
+        self.runtime.spawn(async move {
             if let Ok(apps) = app_manager.list_apps(&serial).await {
                 let mut map = pkg_map.lock().unwrap();
                 for app in apps {
@@ -269,12 +312,14 @@ enum ProcessType {
                 }
             }
         });
-    }`n    fn load_processes(&mut self) {
+    }
+    fn load_processes(&mut self) {
         self.loading = true;
         let serial = self.serial.clone();
         let process_monitor = self.process_monitor.clone();
         let processes = Arc::clone(&self.processes);
-        let pkg_map = Arc::clone(&self.package_to_name);`n        self.runtime.spawn(async move {
+        let pkg_map = Arc::clone(&self.package_to_name);
+        self.runtime.spawn(async move {
             if let Ok(proc_list) = process_monitor.list_processes(&serial).await {
                 let map = pkg_map.lock().unwrap();
                 let mut procs = processes.lock().unwrap();
@@ -289,7 +334,9 @@ enum ProcessType {
                         ProcessType::System
                     } else {
                         ProcessType::Background
-                    };`n                    let display_name = map.get(&p.name).cloned().unwrap_or_else(|| p.name.clone());`n                    ProcessInfo {
+                    };
+                    let display_name = map.get(&p.name).cloned().unwrap_or_else(|| p.name.clone());
+                    ProcessInfo {
                         pid: p.pid,
                         name: display_name,
                         process_type,
@@ -301,14 +348,17 @@ enum ProcessType {
                 }).collect();
             }
         });
-    }`n    fn load_resources(&mut self) {
+    }
+    fn load_resources(&mut self) {
         let serial = self.serial.clone();
-        let resource_monitor = self.resource_monitor.clone();`n        let mem_used = Arc::clone(&self.memory_used);
+        let resource_monitor = self.resource_monitor.clone();
+        let mem_used = Arc::clone(&self.memory_used);
         let mem_total = Arc::clone(&self.memory_total);
         let cpu = Arc::clone(&self.cpu_usage);
         let disk = Arc::clone(&self.disk_usage);
         let net_rx = Arc::clone(&self.network_rx);
-        let net_tx = Arc::clone(&self.network_tx);`n        self.runtime.spawn(async move {
+        let net_tx = Arc::clone(&self.network_tx);
+        self.runtime.spawn(async move {
             if let Ok(mem_info) = resource_monitor.get_memory_info(&serial).await {
                 *mem_used.lock().unwrap() = mem_info.used_kb * 1024;
                 *mem_total.lock().unwrap() = mem_info.total_kb * 1024;
@@ -329,30 +379,38 @@ enum ProcessType {
                 *net_tx.lock().unwrap() = net_info.tx_bytes;
             }
         });
-    }`n    fn kill_process(&mut self, pid: u32) {
+    }
+    fn kill_process(&mut self, pid: u32) {
         let serial = self.serial.clone();
-        let process_monitor = self.process_monitor.clone();`n        self.runtime.spawn(async move {
+        let process_monitor = self.process_monitor.clone();
+        self.runtime.spawn(async move {
             let _ = process_monitor.kill_process(&serial, &pid.to_string()).await;
         });
-    }`n}`nimpl eframe::App for MonitorApp {
+    }
+}
+impl eframe::App for MonitorApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let now = ctx.input(|i| i.time);
         if now - self.last_refresh > 2.0 {
             self.refresh_data();
             self.last_refresh = now;
         }
-        ctx.request_repaint();`n        TopBottomPanel::top("header").show(ctx, |ui| {
+        ctx.request_repaint();
+        TopBottomPanel::top("header").show(ctx, |ui| {
             ui.add_space(5.0);
             self.render_header(ui);
             ui.add_space(5.0);
-        });`n        SidePanel::left("sidebar").default_width(180.0).show(ctx, |ui| {
+        });
+        SidePanel::left("sidebar").default_width(180.0).show(ctx, |ui| {
             ui.add_space(10.0);
             self.render_tabs(ui);
-        });`n        CentralPanel::default().show(ctx, |ui| {
-            ui.add_space(10.0);`n            match self.current_tab {
+        });
+        CentralPanel::default().show(ctx, |ui| {
+            ui.add_space(10.0);
+            match self.current_tab {
                 Tab::Processes => self.render_processes_tab(ui),
                 Tab::Performance => self.render_performance_tab(ui),
             }
         });
     }
-}`n
+}

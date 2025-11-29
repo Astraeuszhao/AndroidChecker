@@ -1,5 +1,8 @@
-﻿pub mod monitor_window;`npub use monitor_window::MonitorApp;`nuse crate::adb::AdbClient;
-use anyhow::Result;`npub fn launch_monitor_gui(serial: String) -> Result<()> {
+﻿pub mod monitor_window;
+pub use monitor_window::MonitorApp;
+use crate::adb::AdbClient;
+use anyhow::Result;
+pub fn launch_monitor_gui(serial: String) -> Result<()> {
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([1400.0, 850.0])
@@ -7,7 +10,9 @@ use anyhow::Result;`npub fn launch_monitor_gui(serial: String) -> Result<()> {
             .with_resizable(true)
             .with_min_inner_size([1000.0, 600.0]),
         ..Default::default()
-    };`n    let client = AdbClient::new()?;`n    eframe::run_native(
+    };
+    let client = AdbClient::new()?;
+    eframe::run_native(
         "AndroidChecker Monitor",
         native_options,
         Box::new(move |cc| {
@@ -16,22 +21,29 @@ use anyhow::Result;`npub fn launch_monitor_gui(serial: String) -> Result<()> {
         }),
     )
     .map_err(|e| anyhow::anyhow!("GUI 鍚姩澶辫触: {}", e))
-}`nfn setup_chinese_fonts(ctx: &egui::Context) {
-    use std::fs;`n    let mut fonts = egui::FontDefinitions::default();`n    let font_paths = vec![
+}
+fn setup_chinese_fonts(ctx: &egui::Context) {
+    use std::fs;
+    let mut fonts = egui::FontDefinitions::default();
+    let font_paths = vec![
         r"C:\Windows\Fonts\msyh.ttc",
-        r"C:\Windows\Fonts\msyhbd.ttc", 
+        r"C:\Windows\Fonts\msyhbd.ttc",
         r"C:\Windows\Fonts\simhei.ttf",
         r"C:\Windows\Fonts\simsun.ttc",
-    ];`n    for (idx, font_path) in font_paths.iter().enumerate() {
+    ];
+    for (idx, font_path) in font_paths.iter().enumerate() {
         if let Ok(font_data) = fs::read(font_path) {
             fonts.font_data.insert(
                 format!("chinese_{}", idx),
                 egui::FontData::from_owned(font_data),
-            );`n            fonts
+            );
+            fonts
                 .families
                 .entry(egui::FontFamily::Proportional)
                 .or_default()
-                .insert(idx, format!("chinese_{}", idx));`n            break;
+                .insert(idx, format!("chinese_{}", idx));
+            break;
         }
-    }`n    ctx.set_fonts(fonts);
-}`n
+    }
+    ctx.set_fonts(fonts);
+}

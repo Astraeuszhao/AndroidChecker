@@ -1,13 +1,17 @@
 ﻿pub mod process;
 pub mod resource;
 pub mod service;
-pub mod app;`npub use process::ProcessMonitor;
+pub mod app;
+pub use process::ProcessMonitor;
 pub use resource::ResourceMonitor;
 pub use service::ServiceMonitor;
-pub use app::AppManager;`nuse crate::adb::AdbClient;`npub struct MonitorRunner {
+pub use app::AppManager;
+use crate::adb::AdbClient;
+pub struct MonitorRunner {
     client: AdbClient,
-}`nimpl MonitorRunner {
+}
+impl MonitorRunner {
     pub fn new(client: AdbClient) -> Self {
         Self { client }
     }
-}`n
+}

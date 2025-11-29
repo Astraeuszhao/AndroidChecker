@@ -8,11 +8,13 @@ use flate2::write::GzEncoder;
 use flate2::Compression;
 use std::fs::{self, File};
 use std::path::{Path, PathBuf};
-use tar::Builder;`npub struct BackupEngine {
+use tar::Builder;
+pub struct BackupEngine {
     client: AdbClient,
     device_mgr: DeviceManager,
     root_checker: RootChecker,
-}`nimpl BackupEngine {
+}
+impl BackupEngine {
     pub fn new(client: AdbClient) -> Self {
         let device_mgr = DeviceManager::new(client.clone());
         let root_checker = RootChecker::new(client.clone());
@@ -21,33 +23,43 @@ use tar::Builder;`npub struct BackupEngine {
             device_mgr,
             root_checker,
         }
-    }`n    pub async fn start_backup(
+    }
+    pub async fn start_backup(
         &self,
         serial: &str,
         items: Vec<BackupItem>,
-    ) -> Result<PathBuf> {`n        let has_root = self.root_checker.has_root(serial).await.unwrap_or(false);`n        if !has_root {
-            ConsoleUi::warn("鏈娴嬪埌 Root 鏉冮檺锛屽皢璺宠繃闇€瑕?Root 鐨勯」鐩?);
+    ) -> Result<PathBuf> {
+        let has_root = self.root_checker.has_root(serial).await.unwrap_or(false);
+        if !has_root {
+            ConsoleUi::warn("未检测到 Root 权限，将跳过需要 Root 的项目");
         } else {
-            ConsoleUi::info("宸叉娴嬪埌 Root 鏉冮檺");
-        }`n        let items: Vec<_> = items
+            ConsoleUi::info("已检测到 Root 权限");
+        }
+        let items: Vec<_> = items
             .into_iter()
             .filter(|item| !item.requires_root() || has_root)
-            .collect();`n        if items.is_empty() {
-            ConsoleUi::error("娌℃湁鍙浠界殑椤圭洰");
+            .collect();
+        if items.is_empty() {
+            ConsoleUi::error("没有可备份的项目");
             return Err(crate::core::AdbError::CommandFailed(
                 "No items to backup".to_string(),
             )
             .into());
-        }`n        let device_info = self.get_device_info(serial).await?;`n        let backup_dir = self.create_backup_dir()?;
+        }
+        let device_info = self.get_device_info(serial).await?;
+        let backup_dir = self.create_backup_dir()?;
         let temp_dir = backup_dir.join(format!(
             "temp_{}_{}",
             Local::now().format("%Y%m%d_%H%M%S"),
             std::process::id()
         ));
-        fs::create_dir_all(&temp_dir)?;`n        ConsoleUi::info(&format!("澶囦唤鐩綍: {}", backup_dir.display()));`n        for item in &items {
-            ConsoleUi::info(&format!("姝ｅ湪澶囦唤: {}", item.name()));
+        fs::create_dir_all(&temp_dir)?;
+        ConsoleUi::info(&format!("备份目录: {}", backup_dir.display()));
+        for item in &items {
+            ConsoleUi::info(&format!("正在备份: {}", item.name()));
             self.backup_item(serial, item, &temp_dir, has_root).await?;
-        }`n        let metadata = BackupMetadata {
+        }
+        let metadata = BackupMetadata {
             version: env!("CARGO_PKG_VERSION").to_string(),
             device_serial: serial.to_string(),
             device_model: device_info.0,
@@ -55,28 +67,40 @@ use tar::Builder;`npub struct BackupEngine {
             backup_time: Local::now().format("%Y-%m-%d %H:%M:%S").to_string(),
             items: items.clone(),
             has_root,
-        };`n        let metadata_json = serde_json::to_string_pretty(&metadata)?;
+        };
+        let metadata_json = serde_json::to_string_pretty(&metadata)?;
         let metadata_file = temp_dir.join("metadata.json");
-        fs::write(&metadata_file, metadata_json)?;`n        ConsoleUi::info("姝ｅ湪鍘嬬缉澶囦唤鏂囦欢...");
-        let backup_file = self.create_archive(&temp_dir, &backup_dir, serial)?;`n        fs::remove_dir_all(&temp_dir)?;`n        ConsoleUi::success(&format!("澶囦唤瀹屾垚: {}", backup_file.display()));`n        Ok(backup_file)
-    }`n    async fn get_device_info(&self, serial: &str) -> Result<(String, String)> {
-        let props = self.device_mgr.get_properties(serial).await?;`n        let model = props
+        fs::write(&metadata_file, metadata_json)?;
+        ConsoleUi::info("正在压缩备份文件...");
+        let backup_file = self.create_archive(&temp_dir, &backup_dir, serial)?;
+        fs::remove_dir_all(&temp_dir)?;
+        ConsoleUi::success(&format!("备份完成: {}", backup_file.display()));
+        Ok(backup_file)
+    }
+    async fn get_device_info(&self, serial: &str) -> Result<(String, String)> {
+        let props = self.device_mgr.get_properties(serial).await?;
+        let model = props
             .get("ro.product.model")
             .or(props.get("ro.product.device"))
             .cloned()
-            .unwrap_or_else(|| "Unknown".to_string());`n        let android = props
+            .unwrap_or_else(|| "Unknown".to_string());
+        let android = props
             .get("ro.build.version.release")
             .cloned()
-            .unwrap_or_else(|| "Unknown".to_string());`n        Ok((model, android))
-    }`n    fn create_backup_dir(&self) -> Result<PathBuf> {
+            .unwrap_or_else(|| "Unknown".to_string());
+        Ok((model, android))
+    }
+    fn create_backup_dir(&self) -> Result<PathBuf> {
         let base_dir = std::env::current_exe()?
             .parent()
             .ok_or_else(|| {
                 std::io::Error::new(std::io::ErrorKind::NotFound, "Parent dir not found")
             })?
-            .join("backups");`n        fs::create_dir_all(&base_dir)?;
+            .join("backups");
+        fs::create_dir_all(&base_dir)?;
         Ok(base_dir)
-    }`n    async fn backup_item(
+    }
+    async fn backup_item(
         &self,
         serial: &str,
         item: &BackupItem,
@@ -89,27 +113,40 @@ use tar::Builder;`npub struct BackupEngine {
             BackupItem::AppData => self.backup_app_data(serial, temp_dir, has_root).await,
             BackupItem::SystemSettings => self.backup_system_settings(serial, temp_dir).await,
         }
-    }`n    async fn backup_user_files(&self, serial: &str, temp_dir: &Path) -> Result<()> {
+    }
+    async fn backup_user_files(&self, serial: &str, temp_dir: &Path) -> Result<()> {
         let target = temp_dir.join("sdcard");
-        fs::create_dir_all(&target)?;`n        ConsoleUi::info("  鎷夊彇 /sdcard/ 鐩綍...");`n        let target_str = target.to_str().unwrap();
+        fs::create_dir_all(&target)?;
+        ConsoleUi::info("  拉取 /sdcard/ 目录...");
+        let target_str = target.to_str().unwrap();
         let (_stdout, stderr) = self
             .client
             .execute(&["-s", serial, "pull", "/sdcard/", target_str])
-            .await?;`n        if !stderr.is_empty() && !stderr.contains("pulled") {
-            ConsoleUi::warn(&format!("  璀﹀憡: {}", stderr));
-        }`n        ConsoleUi::success("  鐢ㄦ埛鏂囦欢澶囦唤瀹屾垚");
+            .await?;
+        if !stderr.is_empty() && !stderr.contains("pulled") {
+            ConsoleUi::warn(&format!("  警告: {}", stderr));
+        }
+        ConsoleUi::success("  用户文件备份完成");
         Ok(())
-    }`n    async fn backup_app_list(&self, serial: &str, temp_dir: &Path) -> Result<()> {
-        let packages = self.device_mgr.get_packages(serial).await?;`n        let list_file = temp_dir.join("app_list.txt");
+    }
+    async fn backup_app_list(&self, serial: &str, temp_dir: &Path) -> Result<()> {
+        let packages = self.device_mgr.get_packages(serial).await?;
+        let list_file = temp_dir.join("app_list.txt");
         let content = packages.join("\n");
-        fs::write(list_file, content)?;`n        ConsoleUi::success(&format!("  搴旂敤鍒楄〃澶囦唤瀹屾垚 (鍏?{} 涓簲鐢?", packages.len()));
+        fs::write(list_file, content)?;
+        ConsoleUi::success(&format!("  应用列表备份完成 (共 {} 个应用)", packages.len()));
         Ok(())
-    }`n    async fn backup_app_data(&self, serial: &str, temp_dir: &Path, has_root: bool) -> Result<()> {
+    }
+    async fn backup_app_data(&self, serial: &str, temp_dir: &Path, has_root: bool) -> Result<()> {
         if !has_root {
-            ConsoleUi::warn("  搴旂敤鏁版嵁澶囦唤闇€瑕?Root 鏉冮檺锛屽凡璺宠繃");
+            ConsoleUi::warn("  应用数据备份需要 Root 权限，已跳过");
             return Ok(());
-        }`n        ConsoleUi::info("  澶囦唤搴旂敤鏁版嵁 (闇€瑕佽緝闀挎椂闂?...");`n        ConsoleUi::warn("  璇峰湪璁惧涓婄‘璁ゅ浠借姹?);`n        let backup_file = temp_dir.join("app_data.ab");
-        let backup_file_str = backup_file.to_str().unwrap();`n        let result = self
+        }
+        ConsoleUi::info("  备份应用数据 (需要较长时间)...");
+        ConsoleUi::warn("  请在设备上确认备份请求");
+        let backup_file = temp_dir.join("app_data.ab");
+        let backup_file_str = backup_file.to_str().unwrap();
+        let result = self
             .client
             .try_execute(&[
                 "-s",
@@ -121,36 +158,47 @@ use tar::Builder;`npub struct BackupEngine {
                 "-f",
                 backup_file_str,
             ])
-            .await;`n        match result {
+            .await;
+        match result {
             Ok((true, _, _)) => {
-                ConsoleUi::success("  搴旂敤鏁版嵁澶囦唤瀹屾垚");
+                ConsoleUi::success("  应用数据备份完成");
             }
             _ => {
-                ConsoleUi::warn("  搴旂敤鏁版嵁澶囦唤澶辫触鎴栬鍙栨秷");
+                ConsoleUi::warn("  应用数据备份失败或被取消");
             }
-        }`n        Ok(())
-    }`n    async fn backup_system_settings(&self, serial: &str, temp_dir: &Path) -> Result<()> {
-        ConsoleUi::info("  澶囦唤绯荤粺璁剧疆鏁版嵁搴?..");`n        let target = temp_dir.join("system_settings");
-        fs::create_dir_all(&target)?;`n        let db_files = vec![
+        }
+        Ok(())
+    }
+    async fn backup_system_settings(&self, serial: &str, temp_dir: &Path) -> Result<()> {
+        ConsoleUi::info("  备份系统设置数据库...");
+        let target = temp_dir.join("system_settings");
+        fs::create_dir_all(&target)?;
+        let db_files = vec![
             "/data/system/users/0/settings_system.xml",
             "/data/system/users/0/settings_secure.xml",
             "/data/system/users/0/settings_global.xml",
-        ];`n        let mut success_count = 0;
+        ];
+        let mut success_count = 0;
         let total_files = db_files.len();
         for db_file in db_files {
             let filename = Path::new(db_file)
                 .file_name()
                 .and_then(|n| n.to_str())
-                .unwrap_or("unknown");`n            let target_file = target.join(filename);
-            let target_str = target_file.to_str().unwrap();`n            let result = self
+                .unwrap_or("unknown");
+            let target_file = target.join(filename);
+            let target_str = target_file.to_str().unwrap();
+            let result = self
                 .client
                 .try_execute(&["-s", serial, "pull", db_file, target_str])
-                .await;`n            if result.is_ok_and(|(success, _, _)| success) {
+                .await;
+            if result.is_ok_and(|(success, _, _)| success) {
                 success_count += 1;
             }
-        }`n        ConsoleUi::success(&format!("  绯荤粺璁剧疆澶囦唤瀹屾垚 ({}/{} 涓枃浠?", success_count, total_files));
+        }
+        ConsoleUi::success(&format!("  系统设置备份完成 ({}/{} 个文件)", success_count, total_files));
         Ok(())
-    }`n    fn create_archive(
+    }
+    fn create_archive(
         &self,
         temp_dir: &Path,
         backup_dir: &Path,
@@ -158,9 +206,12 @@ use tar::Builder;`npub struct BackupEngine {
     ) -> Result<PathBuf> {
         let timestamp = Local::now().format("%Y%m%d_%H%M%S");
         let archive_name = format!("{}_{}.adbbackup", serial, timestamp);
-        let archive_path = backup_dir.join(&archive_name);`n        let tar_gz = File::create(&archive_path)?;
+        let archive_path = backup_dir.join(&archive_name);
+        let tar_gz = File::create(&archive_path)?;
         let enc = GzEncoder::new(tar_gz, Compression::default());
-        let mut tar = Builder::new(enc);`n        tar.append_dir_all(".", temp_dir)?;
-        tar.finish()?;`n        Ok(archive_path)
+        let mut tar = Builder::new(enc);
+        tar.append_dir_all(".", temp_dir)?;
+        tar.finish()?;
+        Ok(archive_path)
     }
 }

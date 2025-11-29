@@ -8,53 +8,29 @@ license = "MIT"
 
 [[bin]]
 name = "androidchecker"
-path = "rust-src/main.rs"
+path = "src/main.rs"
 
 [dependencies]
-# 异步运行时
 tokio = { version = "1.42", features = ["full"] }
-
-# 终端UI
 crossterm = "0.28"
 console = "0.15"
-
-# 序列化
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-
-# 错误处理
 anyhow = "1.0"
 thiserror = "1.0"
-
-# 压缩和打包
 flate2 = "1.0"
 tar = "0.4"
-
-# 系统信息
 sysinfo = "0.32"
-
-# 时间处理
 chrono = "0.4"
-
-# 并发工具
 futures = "0.3"
 tokio-util = "0.7"
-
-# 字节处理
 bytes = "1.8"
-
-# 终端颜色
 colored = "2.1"
-
-# 全局静态变量
 lazy_static = "1.5"
-
-# GUI 框架（原生窗口）
 eframe = "0.28"
 egui = "0.28"
 egui_extras = { version = "0.28", features = ["all_loaders"] }
 
-# Windows API (for UTF-8 console)
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["consoleapi"] }
 
