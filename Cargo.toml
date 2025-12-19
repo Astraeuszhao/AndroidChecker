@@ -27,9 +27,6 @@ tokio-util = "0.7"
 bytes = "1.8"
 colored = "2.1"
 lazy_static = "1.5"
-eframe = "0.28"
-egui = "0.28"
-egui_extras = { version = "0.28", features = ["all_loaders"] }
 
 [target.'cfg(windows)'.dependencies]
 winapi = { version = "0.3", features = ["consoleapi"] }

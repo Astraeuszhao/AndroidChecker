@@ -3,7 +3,6 @@ mod audit;
 mod backup;
 mod checks;
 mod core;
-mod gui;
 mod stress;
 mod ui;
 use adb::{AdbClient, DeviceManager};
@@ -141,13 +140,7 @@ async fn device_menu(
                 println!("SELinux: {}", report.security_env.selinux);
                 println!("安全补丁: {}", report.integrity.security_patch);
             }
-            "5" => {
-                ConsoleUi::info("正在启动图形化系统资源监视器...");
-                if let Err(e) = gui::run_monitor(client.clone(), serial.to_string()) {
-                    ConsoleUi::error(&format!("GUI 启动失败: {}", e));
-                }
-            }
-            "6" | "7" | "8" | "9" => {
+            "5" | "6" | "7" | "8" | "9" => {
                 ConsoleUi::info("功能敬请期待...");
             }
             "q" | "Q" => {

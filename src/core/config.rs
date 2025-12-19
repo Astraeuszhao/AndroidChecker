@@ -12,7 +12,7 @@ impl Default for Config {
         labels.insert("2".to_string(), "手机备份及恢复".to_string());
         labels.insert("3".to_string(), "ADB 稳定性/压力测试".to_string());
         labels.insert("4".to_string(), "系统与硬件安全检查".to_string());
-        labels.insert("5".to_string(), "系统资源监视器".to_string());
+        labels.insert("5".to_string(), "敬请期待...".to_string());
         labels.insert("6".to_string(), "敬请期待...".to_string());
         labels.insert("7".to_string(), "敬请期待...".to_string());
         labels.insert("8".to_string(), "敬请期待...".to_string());
