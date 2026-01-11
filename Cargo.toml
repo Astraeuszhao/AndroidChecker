@@ -1,6 +1,6 @@
 [package]
 name = "androidchecker"
-version = "1.0.0"
+version = "3.4.72"
 edition = "2021"
 authors = ["SmartDolphin Team"]
 description = "Android ADB Audit Tool - 安全审计、压力测试、日志采集、备份恢复"
