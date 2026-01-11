@@ -33,7 +33,7 @@ impl AppManager {
     pub async fn list_apps(&self, serial: &str) -> Result<Vec<AppInfo>> {
         let output = self
             .client
-            .invokeShellCommand(serial, &["pm", "list", "packages", "-f"])
+            .shell(serial, &["pm", "list", "packages", "-f"])
             .await
             .context("Failed to get app list")?;
         let mut apps = Vec::new();
@@ -66,42 +66,42 @@ impl AppManager {
     }
     pub async fn launch_app(&self, serial: &str, package: &str) -> Result<()> {
         self.client
-            .invokeShellCommand(serial, &["monkey", "-p", package, "-c", "android.intent.category.LAUNCHER", "1"])
+            .shell(serial, &["monkey", "-p", package, "-c", "android.intent.category.LAUNCHER", "1"])
             .await
             .context("Failed to launch app")?;
         Ok(())
     }
     pub async fn stop_app(&self, serial: &str, package: &str) -> Result<()> {
         self.client
-            .invokeShellCommand(serial, &["am", "force-stop", package])
+            .shell(serial, &["am", "force-stop", package])
             .await
             .context("Failed to stop app")?;
         Ok(())
     }
     pub async fn clear_app_data(&self, serial: &str, package: &str) -> Result<()> {
         self.client
-            .invokeShellCommand(serial, &["pm", "clear", package])
+            .shell(serial, &["pm", "clear", package])
             .await
             .context("Failed to clear app data")?;
         Ok(())
     }
     pub async fn uninstall_app(&self, serial: &str, package: &str) -> Result<()> {
         self.client
-            .invokeShellCommand(serial, &["pm", "uninstall", package])
+            .shell(serial, &["pm", "uninstall", package])
             .await
             .context("Failed to uninstall app")?;
         Ok(())
     }
     pub async fn enable_app(&self, serial: &str, package: &str) -> Result<()> {
         self.client
-            .invokeShellCommand(serial, &["pm", "enable", package])
+            .shell(serial, &["pm", "enable", package])
             .await
             .context("鍚敤搴旂敤澶辫触")?;
         Ok(())
     }
     pub async fn disable_app(&self, serial: &str, package: &str) -> Result<()> {
         self.client
-            .invokeShellCommand(serial, &["pm", "disable-user", package])
+            .shell(serial, &["pm", "disable-user", package])
             .await
             .context("绂佺敤搴旂敤澶辫触")?;
         Ok(())
@@ -109,7 +109,7 @@ impl AppManager {
     pub async fn get_app_details(&self, serial: &str, package: &str) -> Result<String> {
         let output = self
             .client
-            .invokeShellCommand(serial, &["dumpsys", "package", package])
+            .shell(serial, &["dumpsys", "package", package])
             .await
             .context("Failed to get app details")?;
         Ok(output)
@@ -118,7 +118,7 @@ impl AppManager {
         let grep_cmd = format!("dumpsys package {} | grep permission", package);
         let output = self
             .client
-            .invokeShellCommand(serial, &["sh", "-c", &grep_cmd])
+            .shell(serial, &["sh", "-c", &grep_cmd])
             .await
             .context("鑾峰彇搴旂敤鏉冮檺澶辫触")?;
         let mut permissions = Vec::new();
@@ -142,7 +142,7 @@ impl AppManager {
         let grep_cmd = format!("dumpsys package {} | grep signatures", package);
         let output = self
             .client
-            .invokeShellCommand(serial, &["sh", "-c", &grep_cmd])
+            .shell(serial, &["sh", "-c", &grep_cmd])
             .await
             .context("鑾峰彇搴旂敤绛惧悕澶辫触")?;
         let signatures: Vec<String> = output
@@ -162,7 +162,7 @@ impl AppManager {
         let grep_cmd = format!("dumpsys package {} | grep -A 5 'User 0:'", package);
         let output = self
             .client
-            .invokeShellCommand(serial, &["sh", "-c", &grep_cmd])
+            .shell(serial, &["sh", "-c", &grep_cmd])
             .await
             .unwrap_or_default();
         let mut code_size = 0u64;
@@ -197,7 +197,7 @@ impl AppManager {
     ) -> Result<(String, String, String, bool, u32, String, String)> {
         let output = self
             .client
-            .invokeShellCommand(serial, &["dumpsys", "package", package])
+            .shell(serial, &["dumpsys", "package", package])
             .await?;
         let app_name = package.to_string();
         let mut version_name = String::from("Unknown");

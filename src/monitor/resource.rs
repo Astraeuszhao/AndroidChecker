@@ -86,7 +86,7 @@ impl ResourceMonitor {
     pub async fn get_memory_info(&self, serial: &str) -> Result<MemoryInfo> {
         let output = self
             .client
-            .invokeShellCommand(serial, &["cat", "/proc/meminfo"])
+            .shell(serial, &["cat", "/proc/meminfo"])
             .await
             .context("Failed to read memory info")?;
         let mut total_kb = 0u64;
@@ -125,7 +125,7 @@ impl ResourceMonitor {
     pub async fn get_disk_info(&self, serial: &str) -> Result<SimpleDiskInfo> {
         let output = self
             .client
-            .invokeShellCommand(serial, &["df", "/data"])
+            .shell(serial, &["df", "/data"])
             .await
             .context("Failed to read disk info")?;
         for line in output.lines().skip(1) {
@@ -154,7 +154,7 @@ impl ResourceMonitor {
     pub async fn get_all_disk_info(&self, serial: &str) -> Result<DiskInfo> {
         let output = self
             .client
-            .invokeShellCommand(serial, &["df", "-h"])
+            .shell(serial, &["df", "-h"])
             .await
             .context("Failed to read disk info")?;
         let mut partitions = Vec::new();
@@ -183,7 +183,7 @@ impl ResourceMonitor {
     pub async fn get_network_stats(&self, serial: &str) -> Result<NetworkStats> {
         let output = self
             .client
-            .invokeShellCommand(serial, &["cat", "/proc/net/dev"])
+            .shell(serial, &["cat", "/proc/net/dev"])
             .await
             .context("Failed to read network info")?;
         let mut total_rx = 0u64;
@@ -210,7 +210,7 @@ impl ResourceMonitor {
     pub async fn get_network_info(&self, serial: &str) -> Result<NetworkInfo> {
         let output = self
             .client
-            .invokeShellCommand(serial, &["cat", "/proc/net/dev"])
+            .shell(serial, &["cat", "/proc/net/dev"])
             .await
             .context("Failed to read network info")?;
         let mut interfaces = Vec::new();
